@@ -1,0 +1,63 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import os
+from utils.llmproxy import LLMProxy
+
+
+class Bossman:
+    """
+    This is an intelligent orchestrator. Given the user task, it generates a high level plan.
+    It then generates detailed prompts for one step at a time and hands it to another Agent.
+    This completes the task and reports back to bossman. It can also ask bossman for clarifications.
+    Once a task is completed, bossman decides the next course of action, and loops until completion.
+    """
+
+    def __init__(self, user_prompt: str) -> None:
+        self.llm = LLMProxy()
+        self.worker = Worker()
+        self.context = []
+        self.top_level_plan = None
+        self.user_prompt = user_prompt
+
+    def run(self):
+        if self.top_level_plan is None:
+            prompt_file = os.path.join("prompts", "toplevel.txt")
+            with open(prompt_file, "r") as f:
+                prompt_template = f.read()
+            response = self.llm([prompt_template, self.user_prompt])
+            self.top_level_plan = response
+
+        while True:
+            task_prompt = self.next_step()
+
+            if "DONE" in task_prompt:
+                return task_prompt
+
+            output = self.worker(task_prompt)
+            self.context.append(output)
+
+    def next_step(self):
+        prompt_file = os.path.join("prompts", "nextstep.txt")
+        with open(prompt_file, "r") as f:
+            prompt_template = f.read()
+        prompt_template.format(self.top_level_plan, self.context)
+        return
+
+
+class Worker:
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, *args, **kwds):
+
+        pass
+
+
+app = FastAPI()
+
+
+@app.get("/")
+async def root():
+    analyst_agent = Bossman("This is the user assigned task")
+    respsonse = analyst_agent.run()
+    return {"message": "Hello!"}
