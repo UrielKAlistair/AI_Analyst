@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 class LLMProxy:
     def __init__(self, requests_per_minute=10):
         load_dotenv()
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY")).models
+        self.client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY")).models
         self.requests_per_minute = requests_per_minute
         self.interval = 60 / requests_per_minute
         self.last_request_time = 0
